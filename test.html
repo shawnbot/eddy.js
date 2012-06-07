@@ -1,0 +1,114 @@
+<!DOCTYPE html>
+<html>
+    <head>
+        <title>Tracker test</title>
+        <meta charset="utf-8"/>
+        <meta http-equiv="X-UA-Compatible" content="IE=Edge,chrome=1">
+        <!--[if lt IE 9]><script type="text/javascript" src="js/vendor/aight.js"></script><![endif]-->
+        <script type="text/javascript" src="js/vendor/jquery.min.js"></script>
+        <script type="text/javascript" src="js/vendor/sammy.min.js"></script>
+        <script type="text/javascript" src="js/vendor/d3.v2.min.js"></script>
+        <script type="text/javascript" src="js/tracker.js"></script>
+        <script type="text/javascript" src="js/tracker.views.js"></script>
+        <style type="text/css">
+
+            #index {
+                background: #eee;
+            }
+
+            .has-view #index {
+                display: none;
+            }
+
+            #view {
+                background: #eee;
+                min-height: 100px;
+                display: none;
+            }
+
+            .has-view #view {
+                display: block;
+            }
+
+            #nav .active {
+                font-weight: bold;
+            }
+
+            table#filters {
+                border-collapse: collapse;
+            }
+
+            table#filters td,
+            table#filters th {
+                padding: 2px 4px;
+            }
+
+            table#filters tbody th {
+                text-align: left;
+            }
+
+            table#filters tr.selected > * {
+                background: #ffe;
+            }
+
+        </style>
+    </head>
+    <body>
+        <ul id="nav">
+            <li><a href="#/">Home</a>
+            <li><a href="#/paparazzi">Paparazzi</a>
+            <li><a href="#/buzz">Buzz</a>
+            <li><a href="#/vote">Vote</a>
+        </ul>
+        <div id="index">
+        </div>
+        <div id="view">
+        </div>
+        <p id="msg"></p>
+        <script type="text/javascript">
+            var params = Tracker.Util.QueryString.parse(location.search),
+                baseURL = params.base || "http://p.mtv2012.stamen.com/";
+                
+            var app = new Tracker.App({
+                container:  "body",
+                index:      "#index",
+                view:       "#view",
+                nav:        "#nav",
+                loaders: {
+                    filters: {
+                        baseURL: baseURL,
+                        lastURI: "history-last.jsonp"
+                    }
+                }
+            });
+
+            var msg = $("#msg");
+            app.bind("run-route", function(e) {
+                msg.empty();
+            });
+
+            var PaparazziView = Tracker.View.extend({
+                setupRoutes: function(app) {
+                    this.setupSubRoute(app, ":tweet_id", function(params) {
+                        msg.empty().append("[paparazzi] show tweet: ", params.tweet_id);
+                    });
+                }
+            });
+            var papa = app.registerView(new PaparazziView("paparazzi"));
+
+            var buzz = app.registerView(new Tracker.View.Table("buzz"));
+
+            var VoteView = Tracker.View.extend({
+                setupRoutes: function(app) {
+                    this.setupSubRoute(app, ":filter", function(params) {
+                        msg.append("[vote] select filter: ", params.filter);
+                    });
+                }
+            });
+            var vote = app.registerView(new VoteView("vote"));
+
+            app.run();
+
+        </script>
+    </body>
+</html>
