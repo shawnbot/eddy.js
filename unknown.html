@@ -1,0 +1,240 @@
+<!DOCTYPE html>
+<html>
+    <head>
+        <title>Love will tear us apart again</title>
+        <script type="text/javascript" src="js/vendor/jquery.min.js"></script>
+        <script type="text/javascript" src="js/eddy.js"></script>
+        <script type="text/javascript" src="http://d3js.org/d3.v2.min.js"></script>
+        <style type="text/css">
+            body {
+                font-family: "Helvetica Neue", Helvetica, Arial, sans-serif;
+                color: #fff;
+                background: #000;
+            }
+
+            #filters {
+                border-collapse: collapse;
+                margin-top: 100px;
+            }
+
+            #filters th,
+            #filters td {
+                text-align: left;
+                padding: 4px;
+            }
+
+            #filters .filter {
+                position: relative;
+            }
+
+            #filters .filter .graph {
+                position: relative;
+                height: 24px;
+                width: 400px;
+            }
+
+            #filters .filter .graph svg {
+                position: absolute;
+                left: 0;
+                bottom: 0;
+            }
+
+            #filters .label {
+                color: #bbb;
+            }
+        </style>
+    </head>
+    <body>
+        <p>
+            <button id="prev">prev</button>
+            <button id="next">next</button>
+        </p>
+
+        <table id="filters">
+            <thead>
+                <tr>
+                    <th></th>
+                    <th></th>
+                    <th>Name</th>
+                    <th>Tweets</th>
+                    <th>/min</th>
+                </tr>
+            </thead>
+            <tbody>
+            </tbody>
+        </table>
+
+        <script type="text/javascript">
+
+            var loader = new Eddy.Loader({
+                baseURL: "http://vma-twittertracker.mtv.com/",
+                lastURI: "history-20110829/06/0033.jsonp"
+            });
+
+            loader.on("load", function(data) {
+                if (data.history) {
+                    console.info("got data!", data);
+                    Eddy.Data.prepareFilters(data);
+                    update(data);
+                } else {
+                    console.warn("no data yet...");
+                }
+            });
+
+            var prev = d3.select("#prev")
+                .on("click", function() {
+                    var uri = this.getAttribute("data-uri"); 
+                    loader.load(uri);
+                });
+            var next = d3.select("#next")
+                .on("click", function() {
+                    var uri = this.getAttribute("data-uri"); 
+                    loader.load(uri);
+                });
+
+            loader.start();
+
+            var formatTweets = d3.format(",0");
+
+            var sum = Eddy.Util.sum;
+
+            var updated = false;
+            function update(data) {
+                prev.attr("data-uri", data.prev.href);
+                next.attr("data-uri", data.next.href);
+
+                var list = d3.select("#filters"),
+                    width = 400,
+                    height = 100;
+
+                var history = data.history.map(function(h) {
+                        return h.count;
+                    }),
+                    filters = data.filters,
+                    maxCounts = filters.map(function(f) {
+                        return d3.max(f.counts);
+                    }),
+                    maxCount = d3.max(maxCounts);
+
+                var items = list.selectAll(".filter")
+                    .data(filters, function(d) {
+                        return d.name;
+                    });
+
+                var xScale = d3.scale.linear()
+                    .domain([0, history.length - 1])
+                    .range([2, width - 2]);
+                var yScale = d3.scale.linear()
+                    .domain([0, maxCount])
+                    .rangeRound([height - 2, 2]);
+
+                var line = d3.svg.line()
+                    .x(function(d, i) { return xScale(i); })
+                    .y(function(d, i) { return yScale(d); });
+                var area = d3.svg.area()
+                    .x(line.x())
+                    .y0(yScale.range()[0])
+                    .y1(line.y());
+                var zeros = history.map(function() { return 0; });
+
+                var entering = items.enter().append("tr")
+                    .classed("filter", true);
+
+                var svg = entering.append("td")
+                    .classed("graph", true)
+                    .append("svg")
+                        .attr("width", width)
+                        .attr("height", height)
+                        .on("mouseover", function() {
+                            items.select(".cursor")
+                                .style("visibility", "visible")
+                        })
+                        .on("mouseout", function() {
+                            items.select(".cursor")
+                                .style("visibility", "hidden")
+                        })
+                        .on("mousemove", function() {
+                            var mouse = d3.mouse(this),
+                                x = mouse[0],
+                                i = ~~xScale.invert(x);
+                            items.select(".cursor")
+                                .attr("transform", function(d, j) {
+                                    var n = filtersByName[d.name].smooth_counts[i],
+                                        y = yScale(n);
+                                    return "translate(" + [x, y] + ")";
+                                });
+                        });
+
+                svg.append("path")
+                    .classed("area", true)
+                    .attr("fill", "#000")
+                    .attr("stroke", "none")
+                    .attr("d", area(zeros));
+                svg.append("path")
+                    .classed("line", true)
+                    .attr("fill", "none")
+                    .attr("stroke", "#fff")
+                    .attr("d", line(zeros));
+
+                svg.append("g")
+                    .classed("cursor", true)
+                    .style("visibility", "hidden")
+                    .append("circle")
+                        .attr("fill", "white")
+                        .attr("stroke", "none")
+                        .attr("r", 2);
+
+                entering.append("td")
+                    .classed("rank", true);
+                entering.append("td")
+                    .classed("title", true)
+                    .text(function(d) { return d.name; });
+                entering.append("td")
+                    .classed("total", true);
+                entering.append("td")
+                    .classed("tpm", true);
+
+                items.select(".total")
+                    .text(function(d) { return formatTweets(d.total); });
+                items.select(".tpm")
+                    .text(function(d) { return formatTweets(d.tpm); });
+
+                items.exit().remove();
+
+                items.sort(function(a, b) {
+                    return d3.descending(a.tpm, b.tpm);
+                });
+
+                items.select(".rank")
+                    .text(function(d, i) { return (i + 1) + "."; });
+
+                var filtersByName = {};
+                filters.forEach(function(f) {
+                    filtersByName[f.name] = f;
+                    var counts = f.counts;
+                    f.smooth_counts = counts.map(function(n, i) {
+                        return (n === 0)
+                            ? (i === 0)
+                                ? counts[i + 1]
+                                : (counts[i - 1] + counts[i + 1]) / 2
+                            : n;
+                    });
+                });
+                items.call(updateLines);
+
+                function updateLines() {
+                    this.selectAll("path.area")
+                        .attr("d", function(d) {
+                            return area(filtersByName[d.name].smooth_counts);
+                        });
+                    this.selectAll("path.line")
+                        .attr("d", function(d) {
+                            return line(filtersByName[d.name].smooth_counts);
+                        });
+                }
+
+                updated = true;
+            }
+        </script>
+    </body>
+</html>
