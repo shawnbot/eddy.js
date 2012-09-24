@@ -86,15 +86,18 @@ if (typeof Eddy === "undefined") Eddy = {};
     Eddy.extend(Eddy.Loader.prototype, Eddy.Events, {
         baseURL: null,
         lastURI: null,
-        loaded: 0,
         latency: 0,
         nextTimeout: null,
         retries: 0,
         maxRetries: 10,
 
-        start: function(nextURI, resetLoaded) {
-            console.log("[loader] start(", [nextURI, resetLoaded || false], ")");
-            if (resetLoaded) loaded = 0;
+        // TODO: set running = true when loading, etc.?
+        running: false,
+        waiting: false,
+        loading: false,
+
+        start: function(nextURI) {
+            console.log("[loader] start(", nextURI, ")");
             this.abortNext();
             return this.load(nextURI || this.lastURI);
         },
@@ -104,6 +107,8 @@ if (typeof Eddy === "undefined") Eddy = {};
             this.trigger("stop", {message: message});
         },
 
+        // URI -> JSON-P callback name
+        // works in the same way as its Python equivalent
         getCallback: function(uri) {
             var parts = uri.split(".");
             return parts[0].replace(/[^\w]/g, "_");
@@ -118,13 +123,18 @@ if (typeof Eddy === "undefined") Eddy = {};
             }
         },
 
+        // TODO: bundle reqwest and use it instead
         ajax: $.ajax,
 
+        // load the next URI in the currently loaded data,
+        // called internally
         next: function(nextURI, wait) {
             var self = this;
             console.log("loader.next(", [nextURI, wait, this.latency], ")");
             this.next.uri = nextURI;
             this.next.wait = wait;
+            // TODO: be smarter about how often to just grab the lastURI,
+            // avoiding time drift
             if (wait > 0) {
                 var timeout = wait * 1000;
                 if (this.latency > timeout) {
@@ -163,6 +173,7 @@ if (typeof Eddy === "undefined") Eddy = {};
             .done(function(data) {
                 var latency = self.latency = Date.now() - time;
                 console.info("* load took:", (latency / 1000).toFixed(2), "seconds");
+                // TODO: instead of retry, use lastURI?
                 self.retries = 0;
                 self.trigger("load", data);
                 // console.log("loader.load() [success]:", data);
@@ -200,6 +211,10 @@ if (typeof Eddy === "undefined") Eddy = {};
      */
     Eddy.Data = {
 
+        /*
+         * if you want data.currentUsage, use
+         * Eddy.Data.prepareUsages().
+         */
         prepareHistory: function(data) {
             if (!data.history) return false;
 
@@ -251,6 +266,7 @@ if (typeof Eddy === "undefined") Eddy = {};
                 }
             }
 
+            // FIXME: bail if data.filters === undefined?
             data.filters.forEach(function(filter) {
                 if (!filter.id) {
                     filter.id = filter.name.replace(/\W+/g, "_").toLowerCase();
@@ -304,7 +320,7 @@ if (typeof Eddy === "undefined") Eddy = {};
         },
 
         /**
-         * Prepare minute data
+         * Prepare retweet data
          */
         prepareRetweets: function(data) {
             Eddy.Data.prepareUsages(data);
