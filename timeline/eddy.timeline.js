@@ -40,8 +40,7 @@
 
         // local variables
         var parent,
-            root,
-            mouseRect,
+            paper,
             historyPath,
             filterPath,
             cursor,
@@ -65,18 +64,13 @@
             parent = d3.select(selector)
                 .on("mousedown", onMouseDown);
 
-            root = parent.append("svg")
-                .attr("class", "timeline");
+            paper = new Raphael(parent.node());
 
-            historyPath = root.append("path")
-                .attr("class", "history");
-
-            mouseRect = root.append("rect")
-                .attr("width", "100%")
-                .attr("height", "100%")
-                .attr("fill", "none")
-                .attr("pointer-events", "all")
-                .style("cursor", "ew-resize");
+            historyPath = paper.path()
+                .attr(options.historyStyle || {
+                    "fill": "#000",
+                    "stroke": null
+                });
 
             cursor = parent.append("div")
                 .attr("class", "cursor")
@@ -115,7 +109,7 @@
         };
 
         timeline.detach = function() {
-            root.remove();
+            paper.remove();
         };
 
         // set the size in pixels
@@ -285,8 +279,7 @@
             xx.range([padding[3], width - padding[1]]);
             yy.range([height - padding[2], padding[0]]);
 
-            root.attr("width", width)
-                .attr("height", height);
+            paper.setSize(width, height);
 
             if (currentData) {
                 updatePath(historyPath, currentData.history);
@@ -303,7 +296,7 @@
             if (options.smooth) {
                 area.interpolate(options.smooth);
             }
-            path.attr("d", area(history));
+            path.attr("path", area(history));
         }
 
         function updateSelectedTime() {
