@@ -1,5 +1,5 @@
 JS_COMPILER ?= uglifyjs
-KITCHEN_SINK ?= eddy.min.js examples/js/vendor/d3.v2.min.js examples/js/vendor/raphael.min.js
+KITCHEN_SINK ?= eddy.min.js lib/d3.v2.min.js lib/raphael.min.js
 
 all: \
 	eddy.min.js \
@@ -14,5 +14,5 @@ eddy.kitchensink.js:
 	$(JS_COMPILER) $< > $@
 
 clean:
-	rm -f eddy.min.js
-	rm -f eddy.kitchensink*.js
+	rm -f eddy.kitchensink.js
+	rm -f eddy*.min.js
