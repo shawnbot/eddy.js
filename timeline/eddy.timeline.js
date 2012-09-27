@@ -3,6 +3,10 @@
     /*
      * These are the eddy.timeline option defaults. You can modify them in
      * eddy.timeline.defaults.
+     *
+     * eddy.timeline requires:
+     * 1. d3 version 2.9.0+
+     * 2. Raphael version 2.1.0+
      */
     var defaults = {
         // where to put the timeline in the DOM
@@ -12,9 +16,13 @@
         // whether to automatically increment the total toward the last minute
         // when the end of the timeline is selected
         "incrementLastCount": false,
+        // minimum values for history and filter y-axis scales
+        // (if null or NaN, we use the value of the history count minimum)
+        "historyMin": null,
+        "filterMin": null,
         // whether to "nice" the y-axis scale (which usually creates some
         // padding at top and bottom)
-        "nice": false,
+        "nice": false
     };
 
     eddy.timeline = function(options) {
@@ -29,6 +37,9 @@
             : {};
         // set up event dispatching
         eddy.dispatch(timeline);
+
+        // so you can modify these from the outside?
+        timeline.options = options;
 
         // dimensions in pixels
         var dims = {x: 400, y: 80},
@@ -45,6 +56,8 @@
             filterPath,
             cursor,
             selectedTime,
+            selectedFilter,
+            updated = false,
             previousData,
             currentData,
             timeStep = 60;
@@ -67,8 +80,16 @@
             paper = new Raphael(parent.node());
 
             historyPath = paper.path()
+                .data("ymin", options.historyMin)
                 .attr(options.historyStyle || {
                     "fill": "#000",
+                    "stroke": null
+                });
+
+            filterPath = paper.path()
+                .data("ymin", options.filterMin)
+                .attr(options.filterStyle || {
+                    "fill": "#f0f",
                     "stroke": null
                 });
 
@@ -101,6 +122,7 @@
 
             // expose as public
             timeline.historyPath = historyPath;
+            timeline.filterPath = filterPath;
             timeline.cursor = cursor;
 
             resize();
@@ -153,9 +175,12 @@
         };
 
         // update with new history data
-        timeline.update = function(data) {
+        timeline.update = function(data, animate) {
             previousData = currentData;
             currentData = data;
+
+            // public access
+            timeline.currentData = currentData;
 
             var history = currentData.history;
             timeStep = currentData.time.period;
@@ -172,19 +197,23 @@
                 return h.count;
             });
 
-            if (options.fromZero) {
-                yy.domain([0, d3.max(counts)]);
-            } else {
-                counts.sort();
-                var extent = d3.extent(counts);
-                yy.domain(extent);
+            counts.sort();
+            var extent = d3.extent(counts);
+            yy.domain(extent);
 
-                if (options.nice) {
-                    yy.nice();
-                }
+            if (options.nice) {
+                yy.nice();
             }
 
-            updatePath(historyPath, history);
+            if (!updated) {
+                var emptyHistory = getEmptyHistory();
+                updatePath(historyPath, emptyHistory);
+                updatePath(filterPath, emptyHistory);
+            }
+
+            updatePaths(animate);
+
+            updated = true;
 
             if (!selectedTime || lastSelected) {
                 timeline.selectTime(xx.domain()[1]);
@@ -213,6 +242,12 @@
             } else {
                 // console.warn("same time:", time);
             }
+            return timeline;
+        };
+
+        timeline.selectFilter = function(filterId, animate) {
+            selectedFilter = filterId;
+            updateFilterPath(animate);
             return timeline;
         };
 
@@ -281,22 +316,86 @@
 
             paper.setSize(width, height);
 
-            if (currentData) {
-                updatePath(historyPath, currentData.history);
-            }
+            updatePaths();
 
             updateCursorPosition();
         }
 
-        function updatePath(path, history) {
+        function updatePaths(animate) {
+            if (currentData) {
+                updatePath(historyPath, currentData.history, animate);
+                updateFilterPath(animate);
+            } else {
+                var emptyHistory = getEmptyHistory();
+                updatePath(historyPath, emptyHistory, animate);
+                updatePath(filterPath, emptyHistory, animate);
+            }
+        }
+
+        function updateFilterPath(animate) {
+            if (currentData && selectedFilter) {
+                var filter = (typeof selectedFilter === "object")
+                    ? selectedFilter
+                    : ("filtersById" in currentData)
+                        ? currentData.filtersById[selectedFilter]
+                        : null;
+                if (filter && filter.history) {
+                    console.log("filter history:", filter.history.map(function(h) {
+                        return h.count;
+                    }));
+                    updatePath(filterPath, filter.history, animate);
+                } else {
+                    console.warn("no such filter found:", selectedFilter);
+                }
+            } else {
+                var emptyHistory = getEmptyHistory();
+                updatePath(filterPath, emptyHistory, animate);
+            }
+        }
+
+        function getEmptyHistory() {
+            var timeDomain = xx.domain(),
+                times = d3.range(timeDomain[0], timeDomain[1], timeStep);
+            return times.map(function(time) {
+                return {
+                    "time": time,
+                    "count": 0,
+                    "total": 0
+                };
+            });
+        }
+
+        function updatePath(path, history, animate) {
+            var height = yy.copy();
+
+            // apply custom scale domains
+            var ymin = path.data("ymin");
+            if (!isNaN(ymin)) {
+                height.domain([ymin, height.domain()[1]]);
+            }
+
             var area = d3.svg.area()
                 .x(function(h) { return xx(h.time); })
                 .y0(yy.range()[0])
-                .y1(function(h) { return yy(h.count); });
+                .y1(function(h) { return height(h.count); });
             if (options.smooth) {
                 area.interpolate(options.smooth);
             }
-            path.attr("path", area(history));
+            var coords = area(history);
+            if (animate) {
+                var animation = {
+                    "ms":       300,
+                    "easing":   "linear",
+                    "callback": null
+                };
+                if (typeof animate === "object") {
+                    eddy.util.merge(animation, animate);
+                }
+                path.animate({"path": coords},
+                    animation.ms, animation.easing, animation.callback);
+            } else {
+                path.attr("path", coords);
+            }
         }
 
         function updateSelectedTime() {
