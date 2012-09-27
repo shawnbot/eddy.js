@@ -162,7 +162,6 @@
         timeline.update = function(data) {
             var history = data.history;
 
-            // FIXME: is this right?
             timeStep = data.time.period;
 
             // previous time scale
@@ -253,7 +252,6 @@
         // x -> time
         timeline.xtotime = function(x) {
             var time = xx.invert(x);
-            // FIXME: quantize, or use a scale?
             return ~~(time / timeStep) * timeStep;
         };
 
