@@ -3,6 +3,7 @@
     <head>
         <title>eddy.js timeline</title>
         <script src="../eddy.js"></script>
+        <script src="../eddy.archive.js"></script>
         <script src="../examples/js/vendor/raphael.min.js"></script>
         <script src="../examples/js/vendor/d3.v2.min.js"></script>
         <script src="eddy.timeline.js"></script>
@@ -26,7 +27,7 @@
                 top: 0;
                 height: 100%;
                 left: 0;
-                right: 200px;
+                right: 220px;
             }
 
             #timeline .cursor {
@@ -48,7 +49,7 @@
 
             #timeline .cursor .text {
                 margin-left: 8px;
-                width: 200px;
+                width: 220px;
             }
 
             #timeline .total {
@@ -63,38 +64,41 @@
             <div id="timeline"></div>
         </div>
         <script defer>
-            var qs = eddy.util.qs.parse(location.search);
+            var qs = eddy.util.qs.parse(location.search),
+                baseURL = "http://origin.twittertracker.mtv.com/",
+                lastURI = "history-last.jsonp";
 
             var loader = eddy.loader({
-                baseURL: qs.base || "http://origin.ema-twittertracker.mtv.com/",
-                lastURI: qs.last || "history-20111106/22/1523.jsonp"
+                "baseURL": qs.base || baseURL,
+                "lastURI": qs.last || lastURI
             });
 
             var timeline = eddy.timeline({
-                    "parent":           "#timeline",
-                    "smooth":           qs.smooth || "monotone",
-                    "autoIncrement":    qs.inc !== "0",
-                    "nice":             qs.nice !== "0"
-                })
-                .autoSize()
-                .on("select", function(time, lastSelected) {
-                    // console.log("selected time:", time, lastSelected);
-                });
+                "parent":           "#timeline",
+                "smooth":           qs.smooth || "monotone",
+                "autoIncrement":    qs.inc !== "0",
+                "historyMin":       eddy.util.numor(qs.hmin),
+                "filterMin":        eddy.util.numor(qs.fmin),
+                "nice":             qs.nice !== "0"
+            })
+            .autoSize()
+            .on("select", function(time, lastSelected) {
+                // console.log("selected time:", time, lastSelected);
+            });
+
+            loader.on("load", function(data) {
+                if (data.history) {
+                    eddy.unpack.filters(data);
+                    timeline.update(data, true);
+                }
+            });
+
+            loader.start();
 
             window.onresize = function() {
                 timeline.autoSize();
             };
 
-            loader.on("load", function(data) {
-                if (data.history) {
-                    eddy.unpack.usages(data);
-                    eddy.unpack.history(data);
-                    // console.log("updating timeline...", data.history);
-                    timeline.update(data);
-                }
-            });
-
-            loader.start();
         </script>
     </body>
 </html>
