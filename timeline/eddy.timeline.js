@@ -20,6 +20,7 @@
     eddy.timeline = function(options) {
         // set up options by merging the defaults with the provided object
         options = eddy.util.merge({}, eddy.timeline.defaults, options);
+        // console.log("eddy.timeline(" + JSON.stringify(options) + ")");
 
         // this should work whether you construct an instance with `new
         // eddy.timeline()` or just `eddy.timeline()`.
@@ -182,6 +183,7 @@
                 counts.sort();
                 var extent = d3.extent(counts);
                 yy.domain(extent);
+
                 if (options.nice) {
                     yy.nice();
                 }
@@ -205,7 +207,7 @@
                 var lastSelected = selectedTime === xx.domain()[1];
                 timeline.dispatch("select", time, lastSelected);
 
-                if (lastSelected && options.incrementLastCount) {
+                if (lastSelected && options.autoIncrement) {
                     var history = blob.datum(),
                         lastIndex = history.length - 1,
                         endCount = history[lastIndex].total,

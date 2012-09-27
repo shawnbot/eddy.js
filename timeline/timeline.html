@@ -62,16 +62,18 @@
             <div id="timeline"></div>
         </div>
         <script defer>
+            var qs = eddy.util.qs.parse(location.search);
+
             var loader = eddy.loader({
-                baseURL: "http://origin.ema-twittertracker.mtv.com/",
-                lastURI: "history-20111106/22/1523.jsonp"
+                baseURL: qs.base || "http://origin.ema-twittertracker.mtv.com/",
+                lastURI: qs.last || "history-20111106/22/1523.jsonp"
             });
 
             var timeline = eddy.timeline({
-                    "parent": "#timeline",
-                    "smooth": "monotone",
-                    "incrementLastCount": true,
-                    "nice": true
+                    "parent":           "#timeline",
+                    "smooth":           qs.smooth || "monotone",
+                    "autoIncrement":    qs.inc !== "0",
+                    "nice":             qs.nice !== "0"
                 })
                 .autoSize()
                 .on("select", function(time, lastSelected) {
