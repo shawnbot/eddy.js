@@ -1,7 +1,7 @@
 (function(exports) {
 
     var eddy = {
-        "version": "2.0.1"
+        "version": "2.1.0"
     };
 
     // utility functions
@@ -10,6 +10,27 @@
         sum: function(numbers, map) {
             if (typeof map === "function") numbers = numbers.map(map);
             return numbers.reduce(function(a, b) { return a + b; }, 0);
+        },
+        keys: function(obj) {
+            var keys = [];
+            for (var key in obj) {
+                if (obj.hasOwnProperty(key) && typeof obj[key] !== "function") {
+                    keys.push(key);
+                }
+            }
+            return keys;
+        },
+        merge: function(dest, source1, source2) {
+            var sources = Array.prototype.slice.call(arguments, 1);
+            sources.forEach(function(source) {
+                if (typeof source == "object") {
+                    var keys = eddy.util.keys(source);
+                    keys.forEach(function(key) {
+                        dest[key] = source[key];
+                    });
+                }
+            });
+            return dest;
         }
     };
 
@@ -210,6 +231,10 @@
      */
     eddy.unpack.history = function(data) {
         if (!data.history) {
+            console.warn("no history in data; not unpacking");
+            return false;
+        } else if (typeof data.history[0] === "object") {
+            console.warn("data.history[0] is an object; not unpacking again");
             return false;
         }
 
@@ -222,7 +247,7 @@
         }
 
         var start = currentCount - sumHistory;
-        data.history = eddy.unpack.runningHistory(data.history, start, data.time);
+        data.history = eddy.unpack.runningTotal(data.history, start, data.time);
         return true;
     };
 
@@ -289,7 +314,7 @@
                 start = 0;
             }
             filter.counts = filter.history.slice();
-            filter.history = eddy.unpack.runningHistory(filter.history, start, data.time);
+            filter.history = eddy.unpack.runningTotal(filter.history, start, data.time);
         });
 
         return true;
@@ -380,18 +405,18 @@
         return true;
     };
 
-    eddy.unpack.runningHistory = function(counts, startCount, timeMeta) {
-        var runningCount = startCount,
+    eddy.unpack.runningTotal = function(counts, startCount, timeMeta) {
+        var total = startCount,
             time = timeMeta.start_time,
             step = timeMeta.period;
         return counts.map(function(count) {
             var countTime = time;
             time += step;
-            runningCount += count;
+            total += count;
             return {
                 "count": count,
                 "time": countTime,
-                "running": runningCount
+                "total": total
             };
         });
     };
