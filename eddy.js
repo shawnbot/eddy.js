@@ -1,7 +1,7 @@
 (function(exports) {
 
     var eddy = {
-        "version": "2.1.0"
+        "version": "2.2.0"
     };
 
     // utility functions
@@ -11,6 +11,8 @@
             if (typeof map === "function") numbers = numbers.map(map);
             return numbers.reduce(function(a, b) { return a + b; }, 0);
         },
+
+        // get an array of object keys
         keys: function(obj) {
             var keys = [];
             for (var key in obj) {
@@ -20,6 +22,16 @@
             }
             return keys;
         },
+
+        // coerce the value into a number, and return either the numeric value
+        // or the ifNaN value
+        numor: function(numish, ifNaN) {
+            var num = +numish;
+            return isNaN(num) ? ifNaN : num;
+        },
+
+        // merge keys from source objects (arguments[1:]) into the destination
+        // object (arguments[0])
         merge: function(dest, source1, source2) {
             var sources = Array.prototype.slice.call(arguments, 1);
             sources.forEach(function(source) {
@@ -317,6 +329,13 @@
             filter.history = eddy.unpack.runningTotal(filter.history, start, data.time);
         });
 
+        var filtersById = {};
+        data.filters.forEach(function(filter) {
+            filtersById[filter.id] = filter;
+        });
+
+        data.filtersById = filtersById;
+
         return true;
     };
 
@@ -334,6 +353,8 @@
         data.filters.forEach(function(filter) {
             filtersById[filter.id] = filter;
         });
+
+        data.filtersById = filtersById;
 
         data.minutes.forEach(function(minute) {
             minute.filters = minute.filters.map(function(idCount) {
