@@ -380,10 +380,10 @@
         return true;
     };
 
-    eddy.unpack.runningHistory = function(counts, startCount, time) {
+    eddy.unpack.runningHistory = function(counts, startCount, timeMeta) {
         var runningCount = startCount,
-            time = time.start_time,
-            step = time.period;
+            time = timeMeta.start_time,
+            step = timeMeta.period;
         return counts.map(function(count) {
             var countTime = time;
             time += step;
