@@ -1,8 +1,9 @@
 JS_COMPILER ?= uglifyjs
-KITCHEN_SINK ?= eddy.min.js timeline/eddy.timeline.js examples/js/vendor/d3.v2.min.js examples/js/vendor/raphael.min.js
+KITCHEN_SINK ?= eddy.min.js examples/js/vendor/d3.v2.min.js examples/js/vendor/raphael.min.js
 
 all: \
 	eddy.min.js \
+	eddy.timeline.min.js \
 	eddy.kitchensink.js \
 	eddy.kitchensink.min.js
 
