@@ -1,0 +1,175 @@
+<!DOCTYPE html>
+<html>
+    <head>
+        <title>eddy.js timeline</title>
+        <script src="../eddy.js"></script>
+        <script src="../eddy.archive.js"></script>
+        <script src="../examples/js/vendor/raphael.min.js"></script>
+        <script src="../examples/js/vendor/d3.v2.min.js"></script>
+        <script src="eddy.timeline.js"></script>
+        <style type="text/css">
+
+            body {
+                font-family: "Helvetica Neue", sans-serif;
+                margin: 0;
+                padding: 20px;
+            }
+
+            h2 {
+                margin: .5em 0;
+            }
+
+            ul {
+                margin: 0 0 1em 0;
+            }
+
+            #timeline-container {
+                height: 70px;
+                position: relative;
+                overflow: hidden;
+            }
+
+            #timeline {
+                background: #eee;
+                position: absolute;
+                top: 0;
+                height: 100%;
+                left: 0;
+                right: 220px;
+            }
+
+            #timeline .cursor {
+                color: red;
+                border-left: 1px solid;
+                width: 100%;
+                background-color: rgba(255, 255, 255, .8);
+            }
+
+            #timeline .cursor .marker {
+                width: 5px;
+                height: 5px;
+                background: red;
+                border-radius: 4px;
+                position: absolute;
+                left: -3px;
+                margin-top: -3px;
+            }
+
+            #timeline .cursor .text {
+                margin-left: 8px;
+                width: 220px;
+            }
+
+            #timeline .total {
+                display: block;
+                font-size: 40px;
+            }
+
+        </style>
+    </head>
+    <body>
+        <h2>Shows</h2>
+        <ul id="shows"></ul>
+
+        <div id="timeline-container">
+            <div id="timeline"></div>
+        </div>
+
+        <h2>People</h2>
+        <ul id="filters"></ul>
+        <p><a href="#">deselect filter</a></p>
+
+        <script defer>
+            var qs = eddy.util.qs.parse(location.search),
+                show = eddy.archive.getShow(qs.show || "mtvvma12");
+            if (!show) {
+                throw alert("No such show: " + qs.show);
+            }
+
+            var shows = d3.entries(eddy.archive.shows)
+                .sort(function(a, b) {
+                    return d3.ascending(a.key, b.key);
+                });
+            d3.select("#shows").selectAll("li")
+                .data(shows).enter()
+                .append("li")
+                    .append("a")
+                        .attr("href", function(entry) {
+                            return "?show=" + entry.key;
+                        })
+                        .text(function(entry) {
+                            return entry.key;
+                        });
+
+            var loader = eddy.loader({
+                "baseURL": qs.base || show.baseURL,
+                "lastURI": qs.last || show.historyURI
+            });
+
+            var timeline = eddy.timeline({
+                "parent":           "#timeline",
+                "smooth":           qs.smooth || "monotone",
+                "autoIncrement":    qs.inc !== "0",
+                "historyMin":       eddy.util.numor(qs.hmin),
+                "filterMin":        eddy.util.numor(qs.fmin),
+                "nice":             qs.nice !== "0"
+            })
+            .autoSize()
+            .on("select", function(time, lastSelected) {
+                // console.log("selected time:", time, lastSelected);
+            });
+
+            loader.on("load", function(data) {
+                if (data.history) {
+                    eddy.unpack.filters(data);
+
+                    // console.log("updating timeline...", data.history);
+                    timeline.update(data, true);
+
+                    updateFilterItems(data.filters);
+                }
+            });
+
+            window.onresize = onWindowResize;
+            onWindowResize();
+            window.onhashchange = onHashChange;
+            onHashChange();
+
+            loader.start();
+
+            var filterList = d3.select("#filters");
+            function updateFilterItems(filters) {
+                var items = filterList.selectAll(".filter")
+                    .data(filters, function(filter) {
+                        return filter.id;
+                    });
+                var entering = items.enter()
+                    .append("li")
+                    .attr("class", "filter");
+                entering.append("a")
+                    .attr("href", function(filter) {
+                        return "#" + filter.id;
+                    });
+                items.select("a")
+                    .text(function(filter) {
+                        return filter.name;
+                    });
+                items.exit().remove();
+            }
+
+            function onWindowResize() {
+                timeline.autoSize();
+            }
+
+            function onHashChange() {
+                var hash = location.hash;
+                if (hash.length > 1) {
+                    var filterId = hash.substr(1);
+                    timeline.selectFilter(filterId, true);
+                } else {
+                    timeline.selectFilter(null, true);
+                }
+            }
+        </script>
+    </body>
+</html>
