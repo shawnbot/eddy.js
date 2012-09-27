@@ -42,9 +42,12 @@
         var parent,
             root,
             mouseRect,
-            blob,
+            historyPath,
+            filterPath,
             cursor,
             selectedTime,
+            previousData,
+            currentData,
             timeStep = 60;
 
         var dateFormat = d3.time.format("%I:%M%p");
@@ -65,12 +68,8 @@
             root = parent.append("svg")
                 .attr("class", "timeline");
 
-            blob = root.append("path")
-                .attr("class", "history")
-                .datum([
-                    {"time": 0, "count": 0},
-                    {"time": 1, "count": 0}
-                ]);
+            historyPath = root.append("path")
+                .attr("class", "history");
 
             mouseRect = root.append("rect")
                 .attr("width", "100%")
@@ -107,7 +106,7 @@
                 .attr("class", "time");
 
             // expose as public
-            timeline.area = blob;
+            timeline.historyPath = historyPath;
             timeline.cursor = cursor;
 
             resize();
@@ -161,9 +160,11 @@
 
         // update with new history data
         timeline.update = function(data) {
-            var history = data.history;
+            previousData = currentData;
+            currentData = data;
 
-            timeStep = data.time.period;
+            var history = currentData.history;
+            timeStep = currentData.time.period;
 
             // previous time scale
             var prevTime = xx.domain(),
@@ -189,8 +190,7 @@
                 }
             }
 
-            blob.datum(history)
-                .call(updateBlob);
+            updatePath(historyPath, history);
 
             if (!selectedTime || lastSelected) {
                 timeline.selectTime(xx.domain()[1]);
@@ -208,7 +208,7 @@
                 timeline.dispatch("select", time, lastSelected);
 
                 if (lastSelected && options.autoIncrement) {
-                    var history = blob.datum(),
+                    var history = currentData.history,
                         lastIndex = history.length - 1,
                         endCount = history[lastIndex].total,
                         startCount = history[lastIndex - 1].total;
@@ -264,7 +264,7 @@
 
         timeline.timetoindex = function(time) {
             var scale = xx.copy()
-                .rangeRound([0, blob.datum().length - 1]);
+                .rangeRound([0, currentData.history.length - 1]);
             return scale(time);
         };
 
@@ -272,7 +272,7 @@
         timeline.xtoindex = function(x) {
             var scale = d3.scale.linear()
                 .domain(xx.range())
-                .rangeRound([0, blob.datum().length - 1]);
+                .rangeRound([0, currentData.history.length - 1]);
             return scale(x);
         };
 
@@ -288,12 +288,14 @@
             root.attr("width", width)
                 .attr("height", height);
 
-            blob.call(updateBlob);
+            if (currentData) {
+                updatePath(historyPath, currentData.history);
+            }
 
             updateCursorPosition();
         }
 
-        function updateBlob() {
+        function updatePath(path, history) {
             var area = d3.svg.area()
                 .x(function(h) { return xx(h.time); })
                 .y0(yy.range()[0])
@@ -301,11 +303,11 @@
             if (options.smooth) {
                 area.interpolate(options.smooth);
             }
-            this.attr("d", area);
+            path.attr("d", area(history));
         }
 
         function updateSelectedTime() {
-            if (selectedTime) {
+            if (selectedTime && currentData) {
                 updateCursorPosition();
 
                 cursor.style("visibility", "visible")
@@ -314,7 +316,7 @@
                     .text(timeline.formatTime(selectedTime));
 
                 var index = timeline.timetoindex(selectedTime),
-                    datum = blob.datum()[index],
+                    datum = currentData.history[index],
                     count = datum ? datum.count : 0,
                     total = datum ? datum.total || 0 : 0;
 
