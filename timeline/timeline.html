@@ -1,0 +1,97 @@
+<!DOCTYPE html>
+<html>
+    <head>
+        <title>eddy.js timeline</title>
+        <script src="../eddy.js"></script>
+        <script src="eddy.timeline.js"></script>
+        <script src="../examples/js/vendor/d3.v2.min.js"></script>
+        <style type="text/css">
+
+            body {
+                font-family: "Helvetica Neue", sans-serif;
+                margin: 0;
+                padding: 40px;
+            }
+
+            #timeline-container {
+                height: 70px;
+                position: relative;
+                overflow: hidden;
+            }
+
+            #timeline {
+                background: #eee;
+                position: absolute;
+                top: 0;
+                height: 100%;
+                left: 0;
+                right: 200px;
+            }
+
+            #timeline .cursor {
+                color: red;
+                border-left: 1px solid;
+                width: 100%;
+                background-color: rgba(255, 255, 255, .8);
+            }
+
+            #timeline .cursor .marker {
+                width: 5px;
+                height: 5px;
+                background: red;
+                border-radius: 4px;
+                position: absolute;
+                left: -3px;
+                margin-top: -3px;
+            }
+
+            #timeline .cursor .text {
+                margin-left: 8px;
+                width: 200px;
+            }
+
+            #timeline .total {
+                display: block;
+                font-size: 40px;
+            }
+
+        </style>
+    </head>
+    <body>
+        <div id="timeline-container">
+            <div id="timeline"></div>
+        </div>
+        <script defer>
+            var loader = eddy.loader({
+                baseURL: "http://origin.ema-twittertracker.mtv.com/",
+                lastURI: "history-20111106/22/1523.jsonp"
+            });
+
+            var timeline = eddy.timeline({
+                    "parent": "#timeline",
+                    "smooth": "monotone",
+                    "incrementLastCount": true,
+                    "nice": true
+                })
+                .autoSize()
+                .on("select", function(time, lastSelected) {
+                    // console.log("selected time:", time, lastSelected);
+                });
+
+            window.onresize = function() {
+                timeline.autoSize();
+            };
+
+            loader.on("load", function(data) {
+                if (data.history) {
+                    eddy.unpack.usages(data);
+                    eddy.unpack.history(data);
+                    // console.log("updating timeline...", data.history);
+                    timeline.update(data);
+                }
+            });
+
+            loader.start();
+        </script>
+    </body>
+</html>
