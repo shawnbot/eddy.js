@@ -74,11 +74,8 @@
 
             var timeline = eddy.timeline({
                 "parent":           "#timeline",
-                "smooth":           qs.smooth || "monotone",
-                "autoIncrement":    qs.inc !== "0",
-                "historyMin":       eddy.util.numor(qs.hmin),
-                "filterMin":        eddy.util.numor(qs.fmin),
-                "nice":             qs.nice !== "0"
+                "smooth":           "monotone",
+                "autoIncrement":    false
             })
             .autoSize()
             .on("select", function(time, lastSelected) {
