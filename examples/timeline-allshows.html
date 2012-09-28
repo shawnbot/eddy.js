@@ -11,6 +11,7 @@
 
             body {
                 font-family: "Helvetica Neue", sans-serif;
+                font-size: 12px;
                 margin: 0;
                 padding: 20px;
             }
@@ -71,6 +72,10 @@
         <h2>Shows</h2>
         <ul id="shows"></ul>
 
+        <p id="prevnext">
+            <a id="prev" href="#">&larr; prev</a> |
+            <a id="next" href="#">next &rarr;</a>
+        </p>
         <div id="timeline-container">
             <div id="timeline"></div>
         </div>
@@ -101,10 +106,11 @@
                             return entry.key;
                         });
 
-            var loader = eddy.loader({
-                "baseURL": qs.base || show.baseURL,
-                "lastURI": qs.last || show.historyURI
-            });
+            var currentData,
+                loader = eddy.loader({
+                    "baseURL": qs.base || show.baseURL,
+                    "lastURI": qs.last || show.historyURI
+                });
 
             var timeline = eddy.timeline({
                 "parent":           "#timeline",
@@ -119,6 +125,15 @@
                 // console.log("selected time:", time, lastSelected);
             });
 
+            var prevLink = d3.select("#prev"),
+                nextLink = d3.select("#next"),
+                timeLinks = d3.selectAll("#prev, #next").on("click", function(href) {
+                    console.log("loading:", href);
+                    loader.load(href);
+                    d3.event.preventDefault();
+                    return false;
+                });
+
             loader.on("load", function(data) {
                 if (data.history) {
                     eddy.unpack.filters(data);
@@ -127,7 +142,11 @@
                     timeline.update(data, true);
 
                     updateFilterItems(data.filters);
+
+                    if (data.next) nextLink.datum(data.next.href);
+                    if (data.prev) prevLink.datum(data.prev.href);
                 }
+                currentData = data;
             });
 
             window.onresize = onWindowResize;
