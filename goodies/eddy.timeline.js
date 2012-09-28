@@ -57,9 +57,9 @@
             cursor,
             selectedTime,
             selectedFilter,
-            updated = false,
             previousData,
             currentData,
+            updated = false,
             timeStep = 60;
 
         var dateFormat = d3.time.format("%I:%M%p");
@@ -114,11 +114,18 @@
 
             text.append("span")
                 .attr("class", "total");
+
             text.append("span")
                 .attr("class", "total-label")
                 .text(" tweets as of ");
             text.append("span")
                 .attr("class", "time");
+
+            text.append("span")
+                .attr("class", "since")
+                .text(" since ")
+                .append("span")
+                    .attr("class", "since-time");
 
             // expose as public
             timeline.historyPath = historyPath;
@@ -207,8 +214,8 @@
 
             if (!updated) {
                 var emptyHistory = getEmptyHistory();
-                updatePath(historyPath, emptyHistory);
-                updatePath(filterPath, emptyHistory);
+                updatePath(historyPath, emptyHistory, false);
+                updatePath(filterPath, emptyHistory, false);
             }
 
             updatePaths(animate);
@@ -217,18 +224,22 @@
 
             if (!selectedTime || lastSelected) {
                 timeline.selectTime(xx.domain()[1]);
+            } else {
+                updateSelectedTime();
             }
             return timeline;
         };
 
         // set the selected time
-        timeline.selectTime = function(time) {
+        timeline.selectTime = function(time, silent) {
             if (selectedTime !== time) {
                 selectedTime = time;
                 updateSelectedTime();
 
                 var lastSelected = selectedTime === xx.domain()[1];
-                timeline.dispatch("select", time, lastSelected);
+                if (!silent) {
+                    timeline.dispatch("select", time, lastSelected);
+                }
 
                 if (lastSelected && options.autoIncrement) {
                     var history = currentData.history,
@@ -255,6 +266,10 @@
         timeline.startIncrementing = function(start, end, duration) {
             clearInterval(incrementInterval);
 
+            if (end < start) {
+                start = 0;
+            }
+
             var count = start,
                 span = end - start,
                 tpms = span / duration,
@@ -263,15 +278,12 @@
                 counter = cursor.select(".total")
                     .text(timeline.formatCount(count));
 
-            if (tpinterval > 0) {
-                // console.log(span, "incrementing tweet count by", tpinterval, "every", interval, "ms");
-                incrementInterval = setInterval(function() {
-                    count += tpinterval;
-                    counter.text(timeline.formatCount(~~count));
-                }, interval);
-            } else {
-                console.warn("negative increment span:", [start, end], "->", span, "; not incrementing");
-            }
+            // console.log(span, "incrementing tweet count by", tpinterval, "every", interval, "ms");
+            incrementInterval = setInterval(function() {
+                count += tpinterval;
+                counter.text(timeline.formatCount(~~count));
+            }, interval);
+
             return timeline;
         };
 
@@ -355,7 +367,7 @@
 
         function getEmptyHistory() {
             var timeDomain = xx.domain(),
-                times = d3.range(timeDomain[0], timeDomain[1], timeStep);
+                times = d3.range(timeDomain[0], timeDomain[1] + timeStep, timeStep);
             return times.map(function(time) {
                 return {
                     "time": time,
@@ -410,13 +422,23 @@
                 var index = timeline.timetoindex(selectedTime),
                     datum = currentData.history[index],
                     count = datum ? datum.count : 0,
-                    total = datum ? datum.total || 0 : 0;
+                    total = datum ? datum.total : 0;
 
                 cursor.select(".total")
                     .text(timeline.formatCount(total));
 
                 cursor.select(".marker")
                     .style("top", ~~yy(count) + "px");
+
+                if (datum.usage) {
+                    cursor.select(".since")
+                        .style("display", null)
+                        .select(".since-time")
+                            .text(timeline.formatTime(datum.usage.start));
+                } else {
+                    cursor.select(".since")
+                        .style("display", "none");
+                }
 
             } else {
                 cursor.style("visibility", "hidden");
@@ -431,7 +453,7 @@
         function onClickX(x) {
             var time = timeline.xtotime(x);
             // console.log(x, "->", time);
-            timeline.selectTime(time, true);
+            timeline.selectTime(time);
         }
 
         var mousedown = false;
