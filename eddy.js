@@ -1,5 +1,8 @@
 (function(exports) {
 
+    // dummy console
+    !window.console&&(function(b){function c(){}for(var d=["error","info","log","warn"],a;a=d.pop();)b[a]=b[a]||c})(window.console={});
+
     var eddy = {
         "version": "2.2.1"
     };
@@ -261,38 +264,44 @@
 
         if (data.usage) {
             var usages = data.usage.slice().sort(function(a, b) {
-                return b.start - a.start;
+                return d3.ascending(a.start, b.start)
+                    || d3.ascending(a.total, b.total);
             });
-            console.log("time span:", d3.extent(data.history).map(function(h) { return h.time; }));
+            var dateFormat = d3.time.format("%I:%M"),
+                tf = function(time) {
+                    return dateFormat(new Date(time * 1000));
+                };
+            var first = data.history[0],
+                last = data.history[data.history.length - 1];
+            console.log("time span:", [tf(first.time), tf(last.time)]);
             usages.forEach(function(usage) {
-                console.log("usage:", [usage.start, usage.end], usage.label, usage.count);
+                console.log("usage:", tf(usage.start), "->", tf(usage.end),
+                    usage.label, usage.count, "current:", usage.current);
 
                 var history = data.history.filter(function(h) {
-                    return h.time >= usage.start && h.time <= usage.end;
-                });
-                
-                var localTotal = eddy.util.sum(history.map(function(h) {
-                    return h.count;
-                }));
-                console.log("  local history:", history.length, "ticks, total:", localTotal);
+                        return h.time >= usage.start && h.time <= usage.end;
+                    }),
+                    hlen = history.length,
+                    localTotal = eddy.util.sum(history.map(function(h) {
+                        return h.count;
+                    }));
+                console.log("  local history:", hlen, "ticks, total:", localTotal);
 
-                var total = usage.count - localTotal;
-                if (total < 0) {
-                    console.error("  local total", localTotal, "> usage.count", usage.count);
-                    total = 0;
-                } else {
-                    console.log("  local start total:", total);
+                var total = usage.count;
+                for (var i = hlen - 1; i >= 0; i--) {
+                    var h = history[i];
+                    h.total = total;
+                    h.usage = usage;
+                    // console.log("  ", i + ".", total, "+", h.count, "=", total + h.count);
+                    total -= h.count;
+                    if (total < 0) {
+                        console.warn("  reached zero @", tf(h.time), i, total);
+                        total = 0;
+                        break;
+                    }
                 }
 
-                history.forEach(function(h, i) {
-                    h.total = total;
-                    // console.log("  ", i + ".", total, "+", h.count, "=", total + h.count);
-                    total += h.count;
-                    h.usage = usage;
-                });
-
                 usage.history = history;
-
                 console.log("  reached total:", total, "actual:", usage.count);
             });
         }
