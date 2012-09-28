@@ -299,7 +299,7 @@
                     // console.log("  ", i + ".", total, "+", h.count, "=", total + h.count);
                     total -= h.count;
                     if (total < 0) {
-                        console.warn("  reached zero @", tf(h.time), i, total);
+                        console.warn("  reached zero @", h.time, i, total);
                         total = 0;
                         break;
                     }
