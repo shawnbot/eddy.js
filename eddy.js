@@ -195,7 +195,7 @@
             return loader.request(uri,
                 function(data) {
                     var latency = latency = Date.now() - time;
-                    console.info("load took:", (latency / 1000).toFixed(2), "seconds", uri);
+                    // console.info("load took:", (latency / 1000).toFixed(2), "seconds", uri);
                     // TODO: instead of retry, use lastURI?
                     retries = 0;
 
@@ -267,6 +267,7 @@
                 return d3.ascending(a.start, b.start)
                     || d3.ascending(a.total, b.total);
             });
+            /*
             var dateFormat = d3.time.format("%I:%M"),
                 tf = function(time) {
                     return dateFormat(new Date(time * 1000));
@@ -274,9 +275,12 @@
             var first = data.history[0],
                 last = data.history[data.history.length - 1];
             console.log("time span:", [tf(first.time), tf(last.time)]);
+            */
             usages.forEach(function(usage) {
+                /*
                 console.log("usage:", tf(usage.start), "->", tf(usage.end),
                     usage.label, usage.count, "current:", usage.current);
+                */
 
                 var history = data.history.filter(function(h) {
                         return h.time >= usage.start && h.time <= usage.end;
@@ -285,7 +289,7 @@
                     localTotal = eddy.util.sum(history.map(function(h) {
                         return h.count;
                     }));
-                console.log("  local history:", hlen, "ticks, total:", localTotal);
+                // console.log("  local history:", hlen, "ticks, total:", localTotal);
 
                 var total = usage.count;
                 for (var i = hlen - 1; i >= 0; i--) {
@@ -302,7 +306,7 @@
                 }
 
                 usage.history = history;
-                console.log("  reached total:", total, "actual:", usage.count);
+                // console.log("  reached total:", total, "actual:", usage.count);
             });
         }
         return true;
