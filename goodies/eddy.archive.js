@@ -13,7 +13,9 @@ eddy.archive.getShow = function(eventId) {
 eddy.archive.shows = {
     "mtvvma12": {
         "baseURL":      "http://p.mtvvma12b.stamen.com/",
-        "historyURI":   "history-tracker-last.jsonp",
+        // FIXME: this one is broken?!
+        // "historyURI":   "history-tracker-last.jsonp",
+        "historyURI":   "history-tracker-20120907/02/0104.jsonp",
         "photosURI":    "retweets-last.jsonp",
         "voteURL":      "http://p.mtvvma12b.stamen.com/",
         "voteURI":      "final-history-socialvote-last.jsonp",
