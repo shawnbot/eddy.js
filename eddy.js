@@ -1,7 +1,7 @@
 (function(exports) {
 
     var eddy = {
-        "version": "2.2.0"
+        "version": "2.2.1"
     };
 
     // utility functions
@@ -196,10 +196,6 @@
                     // TODO: instead of retry, use lastURI?
                     retries = 0;
 
-                    // FIXME: move this after the loadNext() call so "load"
-                    // callbacks can call loader.stop()
-                    loader.dispatch("load", data);
-
                     // console.log("loader.load() [success]:", data);
                     var next = data.next ? data.next.href : null,
                         wait = data.next ? data.next.wait : null;
@@ -209,6 +205,8 @@
                     } else {
                         loader.stop("No next.href in response");
                     }
+
+                    loader.dispatch("load", data);
                 },
                 function(req) {
                     if (retries >= maxRetries) {
