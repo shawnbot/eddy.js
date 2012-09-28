@@ -15,7 +15,7 @@
         "smooth": "monotone",
         // whether to automatically increment the total toward the last minute
         // when the end of the timeline is selected
-        "incrementLastCount": false,
+        "autoIncrement": false,
         // minimum values for history and filter y-axis scales
         // (if null or NaN, we use the value of the history count minimum)
         "historyMin": null,
