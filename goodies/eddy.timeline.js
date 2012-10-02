@@ -317,6 +317,33 @@
             return scale(x);
         };
 
+        timeline.stepTime = function(secondOffset) {
+            if (selectedTime) {
+                var timeDomain = xx.domain(),
+                    time = selectedTime + secondOffset;
+                if (secondOffset < 0) {
+                    time = Math.max(time, timeDomain[0]);
+                } else {
+                    time = Math.min(time, timeDomain[1]);
+                }
+                return timeline.selectTime(time);
+            } else {
+                return false;
+            }
+        };
+
+        timeline.addKeyHandlers = function(dispatcher) {
+            if (!dispatcher) dispatcher = window;
+            dispatcher.addEventListener("keyup", onKeyUp);
+            return timeline;
+        };
+
+        timeline.removeKeyHandlers = function(dispatcher) {
+            if (!dispatcher) dispatcher = window;
+            dispatcher.removeEventListener("keyup", onKeyUp);
+            return timeline;
+        };
+
         function resize() {
             var width = dims.x,
                 height = dims.y,
@@ -478,9 +505,26 @@
             mousedown = false;
         }
 
+        function onKeyUp(e) {
+            var offset = 0;
+            switch (e.keyCode) {
+                case 37: // left
+                    offset = -timeStep;
+                    break;
+                case 39: // right
+                    offset = +timeStep;
+                    break;
+            }
+            if (offset != 0) {
+                var multiplier = e.shiftKey ? 10 : 1;
+                timeline.stepTime(offset * multiplier);
+            }
+        }
+
         return timeline.attach(options.parent);
     };
 
+    // export defaults for public modification
     eddy.timeline.defaults = defaults;
 
 })(this);

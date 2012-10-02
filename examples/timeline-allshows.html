@@ -121,6 +121,7 @@
                 "nice":             qs.nice !== "0"
             })
             .autoSize()
+            .addKeyHandlers(document.documentElement)
             .on("select", function(time, lastSelected) {
                 // console.log("selected time:", time, lastSelected);
             });
@@ -139,7 +140,7 @@
                     eddy.unpack.filters(data);
 
                     // console.log("updating timeline...", data.history);
-                    timeline.update(data, true);
+                    timeline.update(data, false);
 
                     updateFilterItems(data.filters);
 
