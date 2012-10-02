@@ -67,7 +67,8 @@
             var date = new Date(time * 1000);
             return dateFormat(date)
                 .toLowerCase()
-                .replace(/^0+/g, "");
+                .replace(/^0+/g, "")
+                .replace(":00", "");
         };
 
         timeline.formatCount = d3.format(",0");
@@ -117,15 +118,19 @@
 
             text.append("span")
                 .attr("class", "total-label")
-                .text(" tweets as of ");
-            text.append("span")
-                .attr("class", "time");
+                .text(" tweets");
 
             text.append("span")
                 .attr("class", "since")
-                .text(" since ")
+                .text(" from ")
                 .append("span")
                     .attr("class", "since-time");
+
+            text.append("span")
+                .attr("class", "time-label")
+                .text(" to ");
+            text.append("span")
+                .attr("class", "time");
 
             // expose as public
             timeline.historyPath = historyPath;
@@ -303,6 +308,7 @@
             return xx(time);
         };
 
+        // time -> history index
         timeline.timetoindex = function(time) {
             var scale = xx.copy()
                 .rangeRound([0, currentData.history.length - 1]);
@@ -334,13 +340,13 @@
 
         timeline.addKeyHandlers = function(dispatcher) {
             if (!dispatcher) dispatcher = window;
-            dispatcher.addEventListener("keyup", onKeyUp);
+            dispatcher.addEventListener("keydown", onKeyUp);
             return timeline;
         };
 
         timeline.removeKeyHandlers = function(dispatcher) {
             if (!dispatcher) dispatcher = window;
-            dispatcher.removeEventListener("keyup", onKeyUp);
+            dispatcher.removeEventListener("keydown", onKeyUp);
             return timeline;
         };
 
