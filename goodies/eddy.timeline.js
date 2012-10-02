@@ -121,11 +121,14 @@
             text.append("span")
                 .attr("class", "time");
 
+            /*
+            // add "since" bits to the text
             text.append("span")
                 .attr("class", "since")
                 .text(" since ")
                 .append("span")
                     .attr("class", "since-time");
+            */
 
             // expose as public
             timeline.historyPath = historyPath;
@@ -352,12 +355,12 @@
                         ? currentData.filtersById[selectedFilter]
                         : null;
                 if (filter && filter.history) {
-                    console.log("filter history:", filter.history.map(function(h) {
-                        return h.count;
-                    }));
+                    // console.log("filter history:", filter.counts);
                     updatePath(filterPath, filter.history, animate);
+                    timeline.dispatch("filter", filter);
                 } else {
                     console.warn("no such filter found:", selectedFilter);
+                    timeline.dispatch("filter", null);
                 }
             } else {
                 var emptyHistory = getEmptyHistory();
