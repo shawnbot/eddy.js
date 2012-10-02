@@ -4,7 +4,7 @@
     !window.console&&(function(b){function c(){}for(var d=["error","info","log","warn"],a;a=d.pop();)b[a]=b[a]||c})(window.console={});
 
     var eddy = {
-        "version": "2.3.0"
+        "version": "2.3.1"
     };
 
     // utility functions
@@ -376,6 +376,15 @@
             }
             filter.counts = filter.history.slice();
             filter.history = eddy.unpack.runningTotal(filter.history, start, data.time);
+
+            var countsByTime = {},
+                totalsByTime = {};
+            filter.history.forEach(function(h) {
+                countsByTime[h.time] = h.count;
+                totalsByTime[h.time] = h.total;
+            });
+            filter.countsByTime = countsByTime;
+            filter.totalsByTime = totalsByTime;
         });
 
         var filtersById = {};
