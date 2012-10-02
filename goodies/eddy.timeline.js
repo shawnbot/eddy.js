@@ -67,7 +67,8 @@
             var date = new Date(time * 1000);
             return dateFormat(date)
                 .toLowerCase()
-                .replace(/^0+/g, "");
+                .replace(/^0+/g, "")
+                .replace(":00", "");
         };
 
         timeline.formatCount = d3.format(",0");
@@ -117,18 +118,22 @@
 
             text.append("span")
                 .attr("class", "total-label")
-                .text(" tweets as of ");
-            text.append("span")
-                .attr("class", "time");
+                .text(" tweets");
 
             /*
             // add "since" bits to the text
             text.append("span")
                 .attr("class", "since")
-                .text(" since ")
+                .text(" from ")
                 .append("span")
                     .attr("class", "since-time");
             */
+
+            text.append("span")
+                .attr("class", "time-label")
+                .text(" to ");
+            text.append("span")
+                .attr("class", "time");
 
             // expose as public
             timeline.historyPath = historyPath;
@@ -306,6 +311,7 @@
             return xx(time);
         };
 
+        // time -> history index
         timeline.timetoindex = function(time) {
             var scale = xx.copy()
                 .rangeRound([0, currentData.history.length - 1]);
@@ -318,6 +324,33 @@
                 .domain(xx.range())
                 .rangeRound([0, currentData.history.length - 1]);
             return scale(x);
+        };
+
+        timeline.stepTime = function(secondOffset) {
+            if (selectedTime) {
+                var timeDomain = xx.domain(),
+                    time = selectedTime + secondOffset;
+                if (secondOffset < 0) {
+                    time = Math.max(time, timeDomain[0]);
+                } else {
+                    time = Math.min(time, timeDomain[1]);
+                }
+                return timeline.selectTime(time);
+            } else {
+                return false;
+            }
+        };
+
+        timeline.addKeyHandlers = function(dispatcher) {
+            if (!dispatcher) dispatcher = window;
+            dispatcher.addEventListener("keydown", onKeyUp);
+            return timeline;
+        };
+
+        timeline.removeKeyHandlers = function(dispatcher) {
+            if (!dispatcher) dispatcher = window;
+            dispatcher.removeEventListener("keydown", onKeyUp);
+            return timeline;
         };
 
         function resize() {
@@ -481,9 +514,26 @@
             mousedown = false;
         }
 
+        function onKeyUp(e) {
+            var offset = 0;
+            switch (e.keyCode) {
+                case 37: // left
+                    offset = -timeStep;
+                    break;
+                case 39: // right
+                    offset = +timeStep;
+                    break;
+            }
+            if (offset != 0) {
+                var multiplier = e.shiftKey ? 10 : 1;
+                timeline.stepTime(offset * multiplier);
+            }
+        }
+
         return timeline.attach(options.parent);
     };
 
+    // export defaults for public modification
     eddy.timeline.defaults = defaults;
 
 })(this);

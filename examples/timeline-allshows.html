@@ -42,6 +42,7 @@
                 color: red;
                 border-left: 1px solid;
                 width: 100%;
+                background-color: #fff;
                 background-color: rgba(255, 255, 255, .8);
             }
 
@@ -58,6 +59,7 @@
             #timeline .cursor .text {
                 margin-left: 8px;
                 width: 220px;
+                font-size: 12px;
             }
 
             #timeline .total {
@@ -122,6 +124,7 @@
                 "nice":             qs.nice !== "0"
             })
             .autoSize()
+            .addKeyHandlers(document.documentElement)
             .on("select", function(time, lastSelected) {
                 // console.log("selected time:", time, lastSelected);
                 filterList.selectAll(".count")
