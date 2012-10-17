@@ -17,9 +17,9 @@
         // when the end of the timeline is selected
         "autoIncrement": false,
         // minimum values for history and filter y-axis scales
-        // (if null or NaN, we use the value of the history count minimum)
-        "historyMin": null,
-        "filterMin": null,
+        // (if NaN, we use the value of the history count minimum)
+        "historyMin": NaN,
+        "filterMin": NaN,
         // whether to "nice" the y-axis scale (which usually creates some
         // padding at top and bottom)
         "nice": false
@@ -120,14 +120,12 @@
                 .attr("class", "total-label")
                 .text(" tweets");
 
-            /*
             // add "since" bits to the text
             text.append("span")
                 .attr("class", "since")
                 .text(" from ")
                 .append("span")
                     .attr("class", "since-time");
-            */
 
             text.append("span")
                 .attr("class", "time-label")
@@ -241,7 +239,7 @@
         // set the selected time
         timeline.selectTime = function(time, silent) {
             if (selectedTime !== time) {
-                selectedTime = time;
+                timeline.selectedTime = selectedTime = time;
                 updateSelectedTime();
 
                 var lastSelected = selectedTime === xx.domain()[1];
@@ -429,6 +427,7 @@
             if (options.smooth) {
                 area.interpolate(options.smooth);
             }
+
             var coords = area(history);
             if (animate) {
                 var animation = {
