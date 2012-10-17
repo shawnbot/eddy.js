@@ -129,14 +129,16 @@
                 // console.log("selected time:", time, lastSelected);
                 filterList.selectAll(".count")
                     .text(function(filter) {
-                        return commify(filter.countsByTime[time]);
+                        var count = filter.countsByTime[time];
+                        // console.log(filter.name, "@", time, count);
+                        return commify(count || 0);
                     });
             });
 
             var prevLink = d3.select("#prev"),
                 nextLink = d3.select("#next"),
                 timeLinks = d3.selectAll("#prev, #next").on("click", function(href) {
-                    console.log("loading:", href);
+                    // console.log("loading:", href);
                     loader.load(href);
                     d3.event.preventDefault();
                     return false;
@@ -146,10 +148,10 @@
                 if (data.history) {
                     eddy.unpack.filters(data);
 
+                    updateFilterItems(data.filters);
+
                     // console.log("updating timeline...", data.history);
                     timeline.update(data, false);
-
-                    updateFilterItems(data.filters);
 
                     if (data.next) nextLink.datum(data.next.href);
                     if (data.prev) prevLink.datum(data.prev.href);
