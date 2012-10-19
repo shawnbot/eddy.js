@@ -17,7 +17,7 @@
         // when the end of the timeline is selected
         "autoIncrement": false,
         // minimum values for history and filter y-axis scales
-        // (if NaN, we use the value of the history count minimum)
+        // (if undefined or NaN, we use the value of the history count minimum)
         "historyMin": NaN,
         "filterMin": NaN,
         // whether to "nice" the y-axis scale (which usually creates some
@@ -418,6 +418,7 @@
             var ymin = path.data("ymin");
             if (!isNaN(ymin)) {
                 height.domain([ymin, height.domain()[1]]);
+                // console.log("domain:", ymin, height.domain());
             }
 
             var area = d3.svg.area()
@@ -482,7 +483,7 @@
 
         function updateCursorPosition() {
             var x = timeline.timetox(selectedTime);
-            cursor.style("left", Math.round(x) + "px");
+            cursor.style("left", Math.round(x || 0) + "px");
         }
 
         function onClickX(x) {
