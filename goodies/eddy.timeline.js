@@ -1,5 +1,7 @@
 (function(exports) {
 
+    // eddy.timeline v1.1
+
     /*
      * These are the eddy.timeline option defaults. You can modify them in
      * eddy.timeline.defaults.
@@ -229,7 +231,7 @@
             updated = true;
 
             if (!selectedTime || lastSelected) {
-                timeline.selectTime(xx.domain()[1]);
+                timeline.selectTime(xx.domain()[1], {auto: true});
             } else {
                 updateSelectedTime();
             }
@@ -237,14 +239,22 @@
         };
 
         // set the selected time
-        timeline.selectTime = function(time, silent) {
+        timeline.selectTime = function(time, state) {
             if (selectedTime !== time) {
+                if (!state) state = {};
+
+                var previousTime = selectedTime;
+                state.offset = previousTime
+                  ? time - selectedTime
+                  : NaN;
+
                 timeline.selectedTime = selectedTime = time;
                 updateSelectedTime();
 
                 var lastSelected = selectedTime === xx.domain()[1];
-                if (!silent) {
-                    timeline.dispatch("select", time, lastSelected);
+                state.last = lastSelected;
+                if (!state.silent) {
+                    timeline.dispatch("select", time, state);
                 }
 
                 if (lastSelected && options.autoIncrement) {
@@ -333,7 +343,7 @@
                 } else {
                     time = Math.min(time, timeDomain[1]);
                 }
-                return timeline.selectTime(time);
+                return timeline.selectTime(time, {offset: secondOffset});
             } else {
                 return false;
             }
@@ -418,7 +428,7 @@
             var ymin = path.data("ymin");
             if (!isNaN(ymin)) {
                 height.domain([ymin, height.domain()[1]]);
-                // console.log("domain:", ymin, height.domain());
+                console.log("domain:", ymin, height.domain());
             }
 
             var area = d3.svg.area()
@@ -489,7 +499,7 @@
         function onClickX(x) {
             var time = timeline.xtotime(x);
             // console.log(x, "->", time);
-            timeline.selectTime(time);
+            timeline.selectTime(time, {interactive: true});
         }
 
         var mousedown = false;
