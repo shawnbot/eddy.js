@@ -4,7 +4,7 @@
     !window.console&&(function(b){function c(){}for(var d=["error","info","log","warn"],a;a=d.pop();)b[a]=b[a]||c})(window.console={});
 
     var eddy = {
-        "version": "2.4.0"
+        "version": "2.5.0"
     };
 
     // utility functions
