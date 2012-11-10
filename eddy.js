@@ -4,7 +4,7 @@
     !window.console&&(function(b){function c(){}for(var d=["error","info","log","warn"],a;a=d.pop();)b[a]=b[a]||c})(window.console={});
 
     var eddy = {
-        "version": "2.5.0"
+        "version": "2.5.1"
     };
 
     // utility functions
@@ -175,7 +175,7 @@
             latency = 0,
             next = {};
 
-        var loader = {};
+        var loader = {options: options};
         // set up event dispatchers
         eddy.dispatch(loader);
 
